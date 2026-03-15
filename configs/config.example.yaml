@@ -1,0 +1,112 @@
+# ── GCP ──────────────────────────────────────────────────────────────────────
+gcp:
+  project_id: "your-gcp-project"
+  region: "us-central1"
+  gcs_bucket: "your-ids-bucket"
+  pubsub_ingestion_topic: "ids-raw-traffic"
+  pubsub_ingestion_sub: "ids-raw-traffic-sub"
+  pubsub_alert_topic: "ids-alerts"
+  pubsub_analyst_topic: "ids-analyst-queue"
+  bigquery_dataset: "ids_events"
+  bigquery_alerts_table: "alerts"
+
+ingestion:
+  batch_size: 512
+  flush_interval_seconds: 5
+  sources:
+    - type: pcap
+      enabled: true
+    - type: netflow
+      enabled: true
+    - type: app_logs
+      enabled: true
+    - type: tls
+      enabled: true
+
+features:
+  flow_window_seconds: 60
+  sequence_length: 32
+  numerical_cols:
+    - duration
+    - bytes_fwd
+    - bytes_bwd
+    - packets_fwd
+    - packets_bwd
+    - pkt_size_mean
+    - pkt_size_std
+    - iat_mean
+    - iat_std
+    - fin_flag_cnt
+    - syn_flag_cnt
+    - rst_flag_cnt
+    - psh_flag_cnt
+    - ack_flag_cnt
+    - flow_bytes_per_sec
+    - flow_pkts_per_sec
+  categorical_cols:
+    - protocol
+    - src_port_bucket
+    - dst_port_bucket
+    - traffic_source
+  tls_cols:
+    - ja3_hash
+    - ja3s_hash
+    - sni_entropy
+    - cert_validity_days
+    - tls_version
+
+models:
+  artifacts_dir: "gs://your-ids-bucket/model-artifacts"
+  local_cache_dir: "/tmp/ids-models"
+  lstm:
+    input_size: 21
+    hidden_size: 128
+    num_layers: 2
+    dropout: 0.3
+    sequence_length: 32
+    fn_fp_penalty_ratio: 5.0
+  xgboost:
+    n_estimators: 500
+    max_depth: 8
+    learning_rate: 0.05
+    scale_pos_weight: 5.0
+    eval_metric: "aucpr"
+    early_stopping_rounds: 30
+  autoencoder:
+    input_dim: 21
+    hidden_dims: [64, 32, 16]
+    latent_dim: 8
+    dropout: 0.2
+    reconstruction_threshold_percentile: 95
+  ensemble:
+    weights:
+      lstm: 0.35
+      xgboost: 0.40
+      autoencoder: 0.25
+    calibration: platt
+
+triage:
+  low_threshold: 0.35
+  high_threshold: 0.75
+
+training:
+  dataset_gcs_path: "gs://your-ids-bucket/datasets/cicids2018.parquet"
+  test_split: 0.15
+  val_split: 0.15
+  random_seed: 42
+  batch_size: 256
+  max_epochs: 50
+  early_stopping_patience: 7
+  learning_rate: 1e-3
+
+retraining:
+  verdict_gcs_path: "gs://your-ids-bucket/analyst-verdicts/"
+  drift_threshold: 0.15
+  schedule_cron: "0 2 * * 0"
+
+serving:
+  host: "0.0.0.0"
+  port: 8080
+  workers: 4
+  max_batch_size: 128
+  inference_timeout_ms: 50

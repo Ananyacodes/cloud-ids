@@ -1,0 +1,44 @@
+# Core ML
+torch==2.2.0
+torchvision==0.17.0
+xgboost==2.0.3
+scikit-learn==1.4.0
+numpy==1.26.4
+pandas==2.2.0
+scipy==1.12.0
+
+# Calibration & metrics
+imbalanced-learn==0.12.0
+
+# Feature extraction
+scapy==2.5.0
+dpkt==1.9.8
+
+# Streaming / GCP
+google-cloud-pubsub==2.19.0
+google-cloud-storage==2.14.0
+google-cloud-bigquery==3.17.1
+confluent-kafka==2.3.0
+
+# API serving
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+pydantic==2.6.0
+
+# Observability
+prometheus-client==0.20.0
+structlog==24.1.0
+
+# Config
+pyyaml==6.0.1
+python-dotenv==1.0.1
+
+# Testing
+pytest==8.0.0
+pytest-asyncio==0.23.4
+httpx==0.26.0
+
+# Dev
+black==24.1.1
+ruff==0.2.1
+mypy==1.8.0

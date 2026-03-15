@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ids-config
+  namespace: ids
+data:
+  IDS_CONFIG: "/app/configs/config.yaml"
