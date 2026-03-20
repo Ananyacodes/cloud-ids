@@ -17,10 +17,10 @@ _drift = DriftDetector()
 _benign_buffer = []
 
 
-def handle_message(raw: dict) -> None:
+def handle_message(raw: dict):
     record = parse_message(raw)
     if record is None:
-        return
+        return None
     result = _predictor.predict_one(record)
     _router.route(result)
 
@@ -36,6 +36,8 @@ def handle_message(raw: dict) -> None:
             if _drift.update(X):
                 _drift.trigger_retraining()
             _benign_buffer.clear()
+
+    return result
 
 
 if __name__ == "__main__":

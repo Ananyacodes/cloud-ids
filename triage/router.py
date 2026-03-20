@@ -1,6 +1,7 @@
 from __future__ import annotations
 import json
 import logging
+import os
 
 from google.cloud import pubsub_v1
 
@@ -12,15 +13,30 @@ logger = logging.getLogger(__name__)
 
 class TriageRouter:
     def __init__(self) -> None:
+        self._publisher = None
+        self._alert_path = ""
+        self._analyst_path = ""
+
+        if str(os.environ.get("IDS_DISABLE_PUBSUB", "")).strip().lower() in {"1", "true", "yes", "on"}:
+            logger.info("IDS_DISABLE_PUBSUB enabled; triage publishing disabled.")
+            return
+
         cfg = get_config()
         self._project = cfg.gcp["project_id"]
         self._alert_topic = cfg.gcp["pubsub_alert_topic"]
         self._analyst_topic = cfg.gcp["pubsub_analyst_topic"]
-        self._publisher = pubsub_v1.PublisherClient()
-        self._alert_path = self._publisher.topic_path(self._project, self._alert_topic)
-        self._analyst_path = self._publisher.topic_path(self._project, self._analyst_topic)
+        try:
+            self._publisher = pubsub_v1.PublisherClient()
+            self._alert_path = self._publisher.topic_path(self._project, self._alert_topic)
+            self._analyst_path = self._publisher.topic_path(self._project, self._analyst_topic)
+        except Exception as exc:
+            logger.warning("Pub/Sub init failed; triage publishing disabled: %s", exc)
+            self._publisher = None
 
     def route(self, result: EnsembleResult) -> bool:
+        if self._publisher is None:
+            return False
+
         payload = json.dumps({
             "flow_id": result.flow_id,
             "timestamp": result.timestamp,
